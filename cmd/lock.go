@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -15,9 +14,15 @@ func lock(group, id, url *string) *cobra.Command {
 		Use:   "recursive-lock",
 		Short: "Try to reserve (lock) a slot for rebooting",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			httpClient := http.DefaultClient
+			if err := checkID(id); err != nil {
+				return fmt.Errorf("checking ID: %w", err)
+			}
 
-			c, err := client.New(*url, *group, *id, httpClient)
+			c, err := client.New(&client.Config{
+				ID:    *id,
+				Group: *group,
+				URL:   *url,
+			})
 			if err != nil {
 				return fmt.Errorf("building the client: %w", err)
 			}

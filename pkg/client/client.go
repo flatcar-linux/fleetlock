@@ -48,17 +48,35 @@ type Client struct {
 }
 
 // New builds a FleetLock client.
-func New(baseServerURL, group, id string, c HTTPClient) (*Client, error) {
-	if _, err := url.ParseRequestURI(baseServerURL); err != nil {
+func New(cfg *Config) (*Client, error) {
+	fleetlock := &Client{
+		baseServerURL: cfg.URL,
+		http:          cfg.HTTP,
+		group:         cfg.Group,
+		id:            cfg.ID,
+	}
+
+	if fleetlock.id == "" {
+		return nil, fmt.Errorf("ID is required")
+	}
+
+	if fleetlock.baseServerURL == "" {
+		return nil, fmt.Errorf("URL is required")
+	}
+
+	if _, err := url.ParseRequestURI(fleetlock.baseServerURL); err != nil {
 		return nil, fmt.Errorf("parsing URL: %w", err)
 	}
 
-	return &Client{
-		baseServerURL: baseServerURL,
-		http:          c,
-		group:         group,
-		id:            id,
-	}, nil
+	if fleetlock.group == "" {
+		fleetlock.group = "default"
+	}
+
+	if fleetlock.http == nil {
+		fleetlock.http = http.DefaultClient
+	}
+
+	return fleetlock, nil
 }
 
 // RecursiveLock tries to reserve (lock) a slot for rebooting.
